@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thanks Diary</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            width: 90%;
+            max-width: 600px;
+        }
+
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+            font-weight: 300;
+            font-size: 2.5em;
+        }
+
+        .input-section {
+            margin-bottom: 30px;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            font-size: 16px;
+            min-height: 120px;
+            resize: vertical;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        textarea:focus {
+            background: white;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .primary-btn {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+        }
+
+        .primary-btn:hover {
+            background: linear-gradient(45deg, #ff5252, #e84118);
+        }
+
+        .entries {
+            margin-top: 30px;
+        }
+
+        .entry {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 15px;
+            border-left: 4px solid #ff6b6b;
+            transition: all 0.3s ease;
+        }
+
+        .entry:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateX(5px);
+        }
+
+        .entry-date {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 12px;
+            margin-bottom: 8px;
+        }
+
+        .entry-text {
+            color: white;
+            line-height: 1.6;
+        }
+
+        .reminder-section {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+        }
+
+        .reminder-input {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+
+        input[type="time"], input[type="email"] {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.9);
+            outline: none;
+        }
+
+        .status {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 14px;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .export-section {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+                margin: 20px;
+            }
+
+            h1 {
+                font-size: 2em;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            .reminder-input {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>✨ Thanks Diary</h1>
+        
+        <div class="reminder-section">
+            <div class="status" id="reminderStatus">Set daily reminder</div>
+            <div class="reminder-input">
+                <input type="time" id="reminderTime" value="20:00">
+                <input type="email" id="emailInput" placeholder="your@email.com (optional)">
+                <button onclick="setReminder()">Set Reminder</button>
+                <button onclick="testNotification()">Test</button>
+            </div>
+        </div>
+
+        <div class="input-section">
+            <textarea id="thankEntry" placeholder="What are you thankful for today?"></textarea>
+            <div class="button-group">
+                <button class="primary-btn" onclick="saveEntry()">Save Entry</button>
+                <button onclick="clearEntry()">Clear</button>
+                <button onclick="exportData()">Export JSON</button>
+                <button onclick="importData()">Import</button>
+            </div>
+        </div>
+
+        <div class="export-section">
+            <input type="file" id="fileInput" accept=".json" style="display: none;" onchange="handleFileImport(event)">
+        </div>
+
+        <div class="entries" id="entriesContainer"></div>
+    </div>
+
+    <script>
+        class ThanksDiary {
+            constructor() {
+                this.entries = this.loadEntries();
+                this.reminderInterval = null;
+                this.init();
+            }
+
+            init() {
+                this.displayEntries();
+                this.requestNotificationPermission();
+                this.loadReminderSettings();
+                this.startReminderCheck();
+            }
+
+            loadEntries() {
+                const saved = localStorage.getItem('thanksEntries');
+                return saved ? JSON.parse(saved) : [];
+            }
+
+            saveEntries() {
+                localStorage.setItem('thanksEntries', JSON.stringify(this.entries));
+            }
+
+            loadReminderSettings() {
+                const time = localStorage.getItem('reminderTime');
+                const email = localStorage.getItem('reminderEmail');
+                if (time) document.getElementById('reminderTime').value = time;
+                if (email) document.getElementById('emailInput').value = email;
+            }
+
+            saveReminderSettings(time, email) {
+                localStorage.setItem('reminderTime', time);
+                if (email) localStorage.setItem('reminderEmail', email);
+            }
+
+            addEntry(text) {
+                const entry = {
+                    id: Date.now(),
+                    text: text.trim(),
+                    date: new Date().toISOString(),
+                    timestamp: Date.now()
+                };
+                this.entries.unshift(entry);
+                this.saveEntries();
+                this.displayEntries();
+            }
+
+            displayEntries() {
+                const container = document.getElementById('entriesContainer');
+                if (this.entries.length === 0) {
+                    container.innerHTML = '<div class="entry"><div class="entry-text">No entries yet. Start writing what you\'re thankful for!</div></div>';
+                    return;
+                }
+
+                container.innerHTML = this.entries.map(entry => `
+                    <div class="entry">
+                        <div class="entry-date">${new Date(entry.date).toLocaleDateString()} at ${new Date(entry.date).toLocaleTimeString()}</div>
+                        <div class="entry-text">${this.escapeHtml(entry.text)}</div>
+                    </div>
+                `).join('');
+            }
+
+            escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+            requestNotificationPermission() {
+                if ('Notification' in window && Notification.permission === 'default') {
+                    Notification.requestPermission();
+                }
+            }
+
+            showNotification(title, body) {
+                if ('Notification' in window && Notification.permission === 'granted') {
+                    new Notification(title, {
+                        body: body,
+                        icon: 'data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y="50%" x="50%" text-anchor="middle" font-size="60">✨</text></svg>'
+                    });
+                }
+            }
+
+            setReminder(time, email) {
+                this.saveReminderSettings(time, email);
+                document.getElementById('reminderStatus').textContent = 
+                    `Reminder set for ${time} daily${email ? ' (email: ' + email + ')' : ''}`;
+            }
+
+            startReminderCheck() {
+                this.reminderInterval = setInterval(() => {
+                    this.checkReminder();
+                }, 60000);
+            }
+
+            checkReminder() {
+                const now = new Date();
+                const currentTime = now.getHours().toString().padStart(2, '0') + ':' + 
+                                  now.getMinutes().toString().padStart(2, '0');
+                const reminderTime = localStorage.getItem('reminderTime');
+                
+                if (reminderTime === currentTime) {
+                    const today = now.toDateString();
+                    const lastReminder = localStorage.getItem('lastReminderDate');
+                    
+                    if (lastReminder !== today) {
+                        this.showNotification('Thanks Diary', 'Time to write what you\'re thankful for today! ✨');
+                        localStorage.setItem('lastReminderDate', today);
+                        
+                        const email = localStorage.getItem('reminderEmail');
+                        if (email) {
+                            this.sendEmailReminder(email);
+                        }
+                    }
+                }
+            }
+
+            sendEmailReminder(email) {
+                const subject = 'Thanks Diary Reminder';
+                const body = 'Time to write what you\'re thankful for today! ✨';
+                const mailtoLink = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+
+                console.log('Email reminder would be sent to:', email);
+                console.log('Mailto link:', mailtoLink);
+            }
+
+            exportData() {
+                const data = {
+                    entries: this.entries,
+                    exportDate: new Date().toISOString(),
+                    version: '1.0'
+                };
+                
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `thanks-diary-${new Date().toISOString().split('T')[0]}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+            }
+
+            importData(data) {
+                try {
+                    const parsed = JSON.parse(data);
+                    if (parsed.entries && Array.isArray(parsed.entries)) {
+                        this.entries = parsed.entries;
+                        this.saveEntries();
+                        this.displayEntries();
+                        alert('Data imported successfully!');
+                    } else {
+                        alert('Invalid file format');
+                    }
+                } catch (e) {
+                    alert('Error importing file: ' + e.message);
+                }
+            }
+        }
+
+        const diary = new ThanksDiary();
+
+        function saveEntry() {
+            const text = document.getElementById('thankEntry').value;
+            if (text.trim()) {
+                diary.addEntry(text);
+                document.getElementById('thankEntry').value = '';
+            }
+        }
+
+        function clearEntry() {
+            document.getElementById('thankEntry').value = '';
+        }
+
+        function setReminder() {
+            const time = document.getElementById('reminderTime').value;
+            const email = document.getElementById('emailInput').value;
+            diary.setReminder(time, email);
+        }
+
+        function testNotification() {
+            diary.showNotification('Test Notification', 'Your reminders are working! ✨');
+        }
+
+        function exportData() {
+            diary.exportData();
+        }
+
+        function importData() {
+            document.getElementById('fileInput').click();
+        }
+
+        function handleFileImport(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => diary.importData(e.target.result);
+                reader.readAsText(file);
+            }
+        }
+
+        document.getElementById('thankEntry').addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'Enter') {
+                saveEntry();
+            }
+        });
+    </script>
+</body>
+</html>
